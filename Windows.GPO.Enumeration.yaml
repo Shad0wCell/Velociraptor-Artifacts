@@ -1,6 +1,6 @@
 name: GPO.Enumeration
 description: |
-   This is the human readable description of the artifact.
+   Enumerate GPO's from Domain Controllers
 
 type: CLIENT
 
