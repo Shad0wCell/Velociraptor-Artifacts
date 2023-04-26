@@ -2,7 +2,7 @@
 
 Welcome to my personal GitHub page where I share my Velociraptor VQL artifacts!
 
-As a digital forensics and incident response (DFIR) professional, I have been using Velociraptor for a short time to perform investigations and gather valuable insights. On this page, I share my collection of Velociraptor VQL artifacts with you.
+As a digital forensics and incident response (DFIR) professional, I have been using Velociraptor to perform investigations and gather valuable insights. On this page, I share my collection of Velociraptor VQL artifacts with you.
 
 Velociraptor is an open-source endpoint monitoring, digital forensics, and incident response tool that uses a powerful query language called VQL (Velociraptor Query Language). It allows users to easily write and execute custom queries against their endpoints to gather valuable information and perform investigations.
 
