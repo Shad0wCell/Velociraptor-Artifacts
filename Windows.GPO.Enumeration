@@ -1,0 +1,28 @@
+name: GPO.Enumeration
+description: |
+   This is the human readable description of the artifact.
+
+type: CLIENT
+
+parameters:
+   - name: FirstParameter
+     default: Default Value of first parameter
+
+sources:
+  - precondition:
+      SELECT OS From info() where OS = 'windows'
+
+    query: |
+      LET GPOReport = '''Get-GPOReport -all -ReportType xml -path ''' + XMLFile
+      LET XMLFile <= 'C:\\Windows\\Temp\\GPOOutput.xml'
+      LET Command <= SELECT * FROM execve(argv=["Powershell", "-ExecutionPolicy", "unrestricted", "-c", GPOReport],length=1000000)
+      LET Filename = XMLFile
+      
+      LET Data <= regex_replace(
+      re='''<[?].+.[?]>''',
+      replace="",
+      source=utf16(string=read_file(filename=Filename)))
+      
+      LET ParsedData <= parse_xml(file=Data, accessor="data")
+      
+      SELECT * FROM ParsedData.report.GPO
