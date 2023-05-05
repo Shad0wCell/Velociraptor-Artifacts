@@ -1,4 +1,4 @@
-name: Windows.KAPE.SANSTRIAGE
+name: Windows.KAPE.SANSTriage
 description: |
     You must package the KAPE tool with the "Targets" folder included into a zip file and server locally. Select the tool hyperlink below to upload the zip archive.
 author: Chris Jones - CPIRT
