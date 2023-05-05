@@ -1,0 +1,31 @@
+name: Windows.KAPE.SANSTRIAGE
+description: |
+    You must package the KAPE tool with the "Targets" folder included into a zip file and server locally. Select the tool hyperlink below to upload the zip archive.
+author: Chris Jones - CPIRT
+tools:
+ - name: KAPE
+   url: 
+
+precondition: 
+    SELECT OS From info() where OS = 'windows'
+
+sources:
+  - query: |
+        
+        LET Toolzip <= SELECT FullPath FROM Artifact.Generic.Utils.FetchBinary(ToolName="KAPE", IsExecutable=FALSE)
+
+        LET TmpDir <= tempdir()
+        
+        LET _ <= SELECT * FROM unzip(filename=Toolzip.FullPath, output_directory=TmpDir)
+
+        LET KapeExe <= TmpDir + '\\kape.exe'
+        
+        LET OutputPath = "C:\\Temp\\"
+        
+        LET output <= SELECT * FROM execve(argv=[KapeExe,"--tsource", "C:", "--tdest", OutputPath, "--target", "$MFT", "--zip", "kape_artifacts", "--gui"],length=10000000)
+           
+        SELECT * FROM foreach(row={
+            SELECT FullPath from glob(globs="C:\\Temp\\*")
+        }, query={
+            SELECT upload(file=FullPath) AS Uploads FROM scope()
+        })
