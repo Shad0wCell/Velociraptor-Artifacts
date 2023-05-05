@@ -20,8 +20,8 @@ sources:
 
         LET KapeExe <= TmpDir + '\\kape.exe'
         
-        LET OutputPath = TmpDir
+        LET OutputPath <= tempdir()
         
-        LET output <= SELECT * FROM execve(argv=[KapeExe,"--tsource", "C:", "--tdest", OutputPath, "--target", "!SANS_Triage", "--zip", "kape_artifacts", "--gui"],length=10000000)
+        LET output <= SELECT * FROM execve(argv=[KapeExe, "--tsource", "C:", "--tdest", OutputPath, "--target", "!SANS_Triage", "--vhdx", "kapecollection", "--zv", "false", "--gui"],length=10000000)
     
-        SELECT upload(file=OSPath) FROM glob(globs="*.zip", root=expand(path=TmpDir))
+        SELECT upload(file=OSPath) FROM glob(globs="*.VHDX", root=expand(path=OutputPath))
