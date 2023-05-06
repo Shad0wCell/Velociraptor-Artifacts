@@ -1,6 +1,11 @@
-name: Exchange.Windows.KAPE.SANSDFIR
+name: CPIRT.Windows.KAPE.Compounds
 description: |
     You must package the KAPE tool with the "Targets" folder included into a zip file and server locally. Select the tool hyperlink below to upload the zip archive.
+    
+    Whitelist the following path to avoid EDR quarantining:
+    
+    C:\\Program Files\\Velociraptor\\*
+
 author: Chris Jones - CPIRT
 tools:
  - name: KAPE
@@ -9,6 +14,132 @@ tools:
 precondition: 
     SELECT OS From info() where OS = 'windows'
 
+parameters:
+ - name:  BasicCollection
+   description:   "!Basic Collection"
+   type:  bool
+   default:   Y
+ - name:  SANS_Triage
+   description:   "!SANS Triage Collection"
+   type:  bool
+   default:   N
+ - name:  Antivirus
+   description:   "Antivirus"
+   type:  bool
+   default:   N
+ - name:  CloudStorage_All
+   description:   "Cloud Storage Contents and Metadata"
+   type:  bool
+   default:   N
+ - name:  CloudStorage_Metadata
+   description:   "Cloud Storage Metadata"
+   type:  bool
+   default:   N
+ - name:  CloudStorage_OneDriveExplorer
+   description:   "OneDrive and other files used with OneDriveExplorer"
+   type:  bool
+   default:   N
+ - name:  CombinedLogs
+   description:   "Collect Event logs, Trace logs, Windows Firewall and PowerShell console"
+   type:  bool
+   default:   N
+ - name:  EvidenceOfExecution
+   description:   "Evidence of execution related files"
+   type:  bool
+   default:   N
+ - name:  Exchange
+   description:   "Exchange Log Files"
+   type:  bool
+   default:   N
+ - name:  FileExplorerReplacements
+   description:   "File Explorer Replacements"
+   type:  bool
+   default:   N
+ - name:  FileSystem
+   description:   "File system metadata"
+   type:  bool
+   default:   N
+ - name:  FTPClients
+   description:   "FTP Clients"
+   type:  bool
+   default:   N
+ - name:  IRCClients
+   description:   "IRC Clients"
+   type:  bool
+   default:   N
+ - name:  KapeTriage
+   description:   "Kape Triage collections that will collect most of the files needed for a DFIR Investigation.  This module pulls evidence from File System files, Registry Hives, Event Logs, Scheduled Tasks, Evidence of Execution, SRUM data, SUM data, Web Browser data (IE/Edge, Chrome, Mozilla history), LNK Files, Jump Lists, 3rd party remote access software logs, 3rd party antivirus software logs, Windows 10 Timeline database, and $I Recycle Bin data files."
+   type:  bool
+   default:   N
+ - name:  MessagingClients
+   description:   "Messaging and communication apps"
+   type:  bool
+   default:   N
+ - name:  MiniTimelineCollection
+   description:   "MFT, Registry and Event Logs to generate a mini timeline"
+   type:  bool
+   default:   N
+ - name:  P2PClients
+   description:   "P2P Clients"
+   type:  bool
+   default:   N
+ - name:  RecycleBin
+   description:   "Recycle Bin DataAndInfo"
+   type:  bool
+   default:   N
+ - name:  RegistryHives
+   description:   "System and user related Registry hives"
+   type:  bool
+   default:   N
+ - name:  RemoteAdmin
+   description:   "Composite target for files related to remote administration tools"
+   type:  bool
+   default:   N
+ - name:  ServerTriage
+   description:   "A compound target for gathering artifacts common to servers."
+   type:  bool
+   default:   N
+ - name:  SOFELK
+   description:   "SOF-ELK related files of interest"
+   type:  bool
+   default:   N
+ - name:  SQLiteDatabases
+   description:   "SQLDatabases Target for use with SQLECmd Module"
+   type:  bool
+   default:   N
+ - name:  TorrentClients
+   description:   "Torrent Clients"
+   type:  bool
+   default:   N
+ - name:  USBDetective
+   description:   "Collects files that can be input into USB Detective for parsing"
+   type:  bool
+   default:   N
+ - name:  UsenetClients
+   description:   "Usenet Clients"
+   type:  bool
+   default:   N
+ - name:  VirtualBox
+   description:   "Runs all VirtualBox modules to collect Virtualbox VM config files, logs and Virtual Hard Disks"
+   type:  bool
+   default:   N
+ - name:  VMware
+   description:   "Runs all VMware modules to collect VMware VM config files, logs and Virtual Hard Disks"
+   type:  bool
+   default:   N
+ - name:  WebBrowsers
+   description:   "Web browser history, bookmarks, etc."
+   type:  bool
+   default:   N
+ - name:  WebServers
+   description:   "Logs from all known web server applications and supporting services"
+   type:  bool
+   default:   N
+ - name:  WSL
+   description:   "All Windows Subsystem for Linux targets"
+   type:  bool
+   default:   N
+   
 sources:
   - query: |
         
@@ -22,6 +153,49 @@ sources:
         
         LET OutputPath <= tempdir()
         
-        LET output <= SELECT * FROM execve(argv=[KapeExe, "--tsource", "C:", "--tdest", OutputPath, "--target", "!SANS_Triage", "--vhdx", "kapecollection", "--zv", "false", "--gui"],length=10000000)
+        LET cmdline <= filter(list=(
+          KapeExe, 
+        "--tsource", "C:", 
+        "--tdest", OutputPath, 
+        "--target", 
+        if(condition=BasicCollection, then="!BasicCollection"),
+        if(condition=SANS_Triage, then="!SANS_Triage"),
+        if(condition=Antivirus, then= "Antivirus"),
+        if(condition=CloudStorage_All, then= "CloudStorage_All"),
+        if(condition=CloudStorage_Metadata, then="CloudStorage_Metadata"),
+        if(condition=CloudStorage_OneDriveExplorer, then="CloudStorage_OneDriveExplorer"),
+        if(condition=CombinedLogs, then="CombinedLogs"),
+        if(condition=EvidenceOfExecution, then="EvidenceOfExecution"),
+        if(condition=Exchange, then="Exchange"),
+        if(condition=FileExplorerReplacements, then="FileExplorerReplacements"),
+        if(condition=FileSystem, then="FileSystem"),
+        if(condition=FTPClients, then="FTPClients"),
+        if(condition=IRCClients, then="IRCClients"),
+        if(condition=KapeTriage, then="KapeTriage"),
+        if(condition=MessagingClients, then="MessagingClients"),
+        if(condition=MiniTimelineCollection, then="MiniTimelineCollection"),
+        if(condition=P2PClients, then="P2PClients"),
+        if(condition=RecycleBin, then="RecycleBin"),
+        if(condition=RegistryHives, then="RegistryHives"),
+        if(condition=RemoteAdmin, then="RemoteAdmin"),
+        if(condition=ServerTriage, then="ServerTriage"),
+        if(condition=SOFELK, then="SOFELK"),
+        if(condition=SQLiteDatabases, then="SQLiteDatabases"),
+        if(condition=TorrentClients, then="TorrentClients"),
+        if(condition=USBDetective, then="USBDetective"),
+        if(condition=UsenetClients, then="UsenetClients"),
+        if(condition=VirtualBox, then="VirtualBox"),
+        if(condition=VMware, then="VMware"),
+        if(condition=WebBrowsers, then="WebBrowsers"),
+        if(condition=WebServers, then="WebServers"),
+        if(condition=WSL, then="WSL"),
+        "--vhdx", "kapecollection", 
+        "--zv", "false", 
+        "--gui"),  regex=".+")
+        
+        LET ExecKape <= SELECT *
+        FROM execve(argv=cmdline, length=9999999)
+        WHERE log(message=Stdout)
+
     
         SELECT upload(file=OSPath) FROM glob(globs="*.VHDX", root=expand(path=OutputPath))
