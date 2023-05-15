@@ -1,0 +1,32 @@
+name: CPIRT.Windows.PersistenceSniper
+description: |
+
+author: Chris Jones - CPIRT
+tools:
+ - name: PSniper
+   url: https://github.com/last-byte/PersistenceSniper/releases/download/v1.11.0/PersistenceSniper.zip
+
+precondition: 
+    SELECT OS From info() where OS = 'windows'
+   
+sources:
+  - query: |
+        
+        LET Toolzip <= SELECT FullPath FROM Artifact.Generic.Utils.FetchBinary(ToolName="PSniper", IsExecutable=FALSE)
+
+        LET TmpDir <= tempdir()
+        
+        LET _ <= SELECT * FROM unzip(filename=Toolzip.FullPath, output_directory=TmpDir)
+
+        LET PSniperLocation <= TmpDir + '\\PersistenceSniper.psm1'
+        
+        LET OutputPath <= tempdir()
+        
+        LET ImportModule <= "Import-Module " + PSniperLocation + " -Force"
+        
+        LET Install <= SELECT * FROM execve(argv=["Powershell", ImportModule], length=9999999)
+        
+        LET ExecPSniper <= SELECT * FROM execve(argv=["Powershell", "Find-AllPersistence" + " -OutputCSV ", OutputPath + '\\PersistenceSniper.csv'], length=9999999)
+        WHERE log(message=Stdout)
+        
+        SELECT upload(file=OSPath) FROM glob(globs="*.csv", root=expand(path=OutputPath))
