@@ -1,0 +1,39 @@
+name: Server.Enrichment.VTIPReputation
+author: CPIRT - Chris Jones
+description: |
+  Submit a file hash to Virustotal for details. Default Public API restriction is 4 requests/min.
+
+  This artifact can be called from within another artifact (such as one looking for files) to enrich the data made available by that artifact.
+
+  Ex.
+
+    `SELECT * from Server.Enrichment.VTIP(IP=$YOURIP)`
+
+  Using Wes Lamberts framework for VT querying.
+
+type: SERVER
+
+parameters:
+    - name: IP
+      type: string
+      description: IP to submit to VT
+      default:
+
+    - name: VirustotalKey
+      type: string
+      description: API key for Virustotal. Leave blank here if using server metadata store.
+      default:
+
+sources:
+  - query: |
+        LET Creds = if(
+           condition=VirustotalKey,
+           then=VirustotalKey,
+           else=server_metadata().VirustotalKey)
+
+        LET URL <= 'https://www.virustotal.com/api/v3/ip_addresses/' + IP
+
+        LET Data = SELECT parse_json(data=Content) AS VTData
+        FROM http_client(url=URL, headers=dict(`x-apikey`=Creds))
+
+        SELECT VTData.data.attributes.reputation AS Reputation, VTData.data.links.self AS VTLink FROM Data
