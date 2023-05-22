@@ -1,4 +1,4 @@
-name: Windows.Network.Netstat.VTReputation
+name: Windows.Network.Netstat.VTIPReputation
 description: |
   Show information about open sockets. On windows the time when the
   socket was first bound is also shown.
@@ -22,5 +22,5 @@ sources:
       Timestamp
     FROM netstat() WHERE NOT `Raddr.IP` =~ '''(^127\.0\.0\.1)|(^192\.168)|(^10\.)|(^172\.1[6-9])|(^172\.2[0-9])|(^172\.3[0-1])|(^0\.0\.0\.0)'''
     
-    SELECT *, {SELECT VTRating FROM Server.Enrichment.VTIPReputation(VirustotalKey=VTKey,IP=`Raddr.IP`)} AS VTResults
+    SELECT *, {SELECT * FROM Artifact.Server.Enrichment.VTIPReputation(VirustotalKey=VTKey,IP=`Raddr.IP`)} AS VTResults
     FROM foreach(row=Results)
