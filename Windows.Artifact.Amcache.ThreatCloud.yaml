@@ -40,7 +40,7 @@ sources:
         ThreatCloudData.response.risk[0] AS Risk, 
         ThreatCloudData.response.findings.total[0] AS Total,
         ThreatCloudData.response.findings.positives[0] AS VTPositives
-        FROM Artifact.Server.Enrichment.ThreatCloud(ThreatCloudAPIKey=APIKey,Hash=SHA1)} AS Data
+        FROM Artifact.Server.Enrichment.ThreatCloud.Hash(ThreatCloudAPIKey=APIKey,Hash=SHA1)} AS Data
         FROM foreach(row=results)
         
         SELECT EntryKey, KeyMTime, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
