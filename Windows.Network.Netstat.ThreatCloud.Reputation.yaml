@@ -1,0 +1,31 @@
+name: Windows.Network.Netstat.ThreatCloud.Reputation
+description: |
+  Show information about open sockets. On windows the time when the
+  socket was first bound is also shown.
+
+parameters:
+   - name: ThreatCloudAPIKey
+     default:
+
+sources:
+- precondition: SELECT OS From info() where OS = 'windows'
+  query: |
+    LET processes <= SELECT Name, Pid AS ProcPid FROM pslist()
+    LET Results <= SELECT Pid, {
+        SELECT Name from processes
+        WHERE Pid = ProcPid
+      } AS Name, FamilyString as Family,
+      TypeString as Type,
+      Status,
+      Laddr.IP, Laddr.Port,
+      Raddr.IP, Raddr.Port,
+      Timestamp
+    FROM netstat() WHERE NOT `Raddr.IP` =~ '''(^127\.0\.0\.1)|(^192\.168)|(^10\.)|(^172\.1[6-9])|(^172\.2[0-9])|(^172\.3[0-1])|(^0\.0\.0\.0)|(^:\:)|(^$)|(\s+$)'''
+    
+    LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
+        ThreatCloudData.response.reputation.severity[0] AS Severity, 
+        ThreatCloudData.response.risk[0] AS Risk
+    FROM Artifact.Server.Enrichment.ThreatCloud.IP(ThreatCloudAPIKey=ThreatCloudAPIKey,IP=`Raddr.IP`)} AS Data
+    FROM foreach(row=Results)
+        
+    SELECT Name, Pid, `Raddr.IP`, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity FROM Rows
