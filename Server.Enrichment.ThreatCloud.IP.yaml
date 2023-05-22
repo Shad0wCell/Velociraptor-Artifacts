@@ -1,0 +1,41 @@
+name: Server.Enrichment.ThreatCloud.IP
+author: Chris Jones CPIRT
+description: |
+
+type: SERVER
+
+parameters:
+    - name: IP
+      type: string
+      description: The IP to query Check Point ThreatCloud.
+      default:
+
+    - name: ThreatCloudAPIKey
+      type: string
+      description: API key for Check Point ThreatCloud.
+      default:
+
+sources:
+  - query: |
+        LET APIKey = ThreatCloudAPIKey
+        Let SessionKeyURL = "https://rep.checkpoint.com/rep-auth/service/v1.0/request"
+        LET QueryURL = 'https://rep.checkpoint.com/url-rep/service/v2.0/query?resource=' + IP
+        
+        LET GetSessionKey <= SELECT * FROM http_client(
+            url=SessionKeyURL,
+            headers=dict(
+            `Client-Key`= APIKey),
+            method="GET")
+            
+        LET Data <= SELECT parse_json(data=Content) AS ThreatCloudData
+            FROM http_client(
+            url=QueryURL, 
+            headers=dict(
+            `Accept`= "application/json",
+            `Client-Key`= APIKey,
+            `token`= GetSessionKey[0].Content,
+            `Content-Type`="application/json"),
+            method="POST",
+            data='{\"request\":[{\"resource\":\"' + IP + '\"}]}')
+        
+        SELECT * FROM Data
