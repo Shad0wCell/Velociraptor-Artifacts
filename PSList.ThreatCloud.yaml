@@ -7,16 +7,18 @@ type: CLIENT
 author: Chris Jones - CPIRT
 
 parameters:
-   - name: APIKey
-     default: APIKey
+   - name: ThreatCloudKey
+     default: ThreatCloudKey
 
 sources:
   - precondition:
       SELECT OS From info() where OS = 'windows' or 'linux'
 
     query: |
-        LET Key = APIKey
-
+        LET Creds = if(
+           condition=ThreatCloudKey,
+           then=ThreatCloudKey,
+           else=server_metadata().ThreatCloudKey)
         LET PSListQuery <= SELECT Name,Pid,Ppid,Username,hash(path=Exe).SHA256 AS SHA256,
         CommandLine, Exe FROM pslist()
 
@@ -25,7 +27,7 @@ sources:
         ThreatCloudData.response.risk[0] AS Risk, 
         ThreatCloudData.response.findings.total[0] AS Total,
         ThreatCloudData.response.findings.positives[0] AS VTPositives
-        FROM Artifact.Server.Enrichment.ThreatCloud(ThreatCloudAPIKey=APIKey,Hash=SHA256)} AS Data
+        FROM Artifact.Server.Enrichment.ThreatCloud(ThreatCloudAPIKey=Creds,Hash=SHA256)} AS Data
         FROM foreach(row=PSListQuery)
         
         SELECT Name, Pid, Username, CommandLine, Exe, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
