@@ -1,6 +1,7 @@
 name: PSList.ThreatCloud
 description: |
    Combination of PSList with Check Point ThreatCloud reputation lookup using the Server Enrichment Artifact.
+   Insert ThreatCloud API key into server metadata as ThreatCloudKey
 
 type: CLIENT
 
@@ -27,7 +28,7 @@ sources:
         ThreatCloudData.response.risk[0] AS Risk, 
         ThreatCloudData.response.findings.total[0] AS Total,
         ThreatCloudData.response.findings.positives[0] AS VTPositives
-        FROM Artifact.Server.Enrichment.ThreatCloud(ThreatCloudAPIKey=Creds,Hash=SHA256)} AS Data
+        FROM Artifact.Server.Enrichment.ThreatCloud.Hash(ThreatCloudKey=Creds,Hash=SHA256)} AS Data
         FROM foreach(row=PSListQuery)
         
         SELECT Name, Pid, Username, CommandLine, Exe, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
