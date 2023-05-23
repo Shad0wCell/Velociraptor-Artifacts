@@ -1,6 +1,7 @@
 name: Server.Enrichment.ThreatCloud.Hash
 author: Chris Jones CPIRT
-description: |
+description: | 
+    Insert ThreatCloud API key into server metadata as TCKey
 
 type: SERVER
 
@@ -10,7 +11,7 @@ parameters:
       description: The file hash to submit to Check Point ThreatCloud (MD5, SHA1, SHA256).
       default:
 
-    - name: ThreatCloudAPIKey
+    - name: ThreatCloudKey
       type: string
       description: API key for Check Point ThreatCloud.
       default:
@@ -20,7 +21,7 @@ sources:
         LET Creds = if(
            condition=ThreatCloudKey,
            then=ThreatCloudKey,
-           else=server_metadata().ThreatCloudKey)        
+           else=server_metadata().TCKey)        
         
         LET SessionKeyURL = "https://rep.checkpoint.com/rep-auth/service/v1.0/request"
         LET QueryURL = 'https://rep.checkpoint.com/file-rep/service/v2.0/query?resource=' + Hash
