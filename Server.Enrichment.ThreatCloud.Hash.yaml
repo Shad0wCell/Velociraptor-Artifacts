@@ -1,7 +1,7 @@
 name: Server.Enrichment.ThreatCloud.Hash
 author: Chris Jones CPIRT
 description: | 
-    Insert ThreatCloud API key into server metadata as TCKey
+    Insert ThreatCloud API key into server metadata as ThreatCloudKey
 
 type: SERVER
 
