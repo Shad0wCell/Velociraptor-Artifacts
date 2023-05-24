@@ -4,13 +4,20 @@ description: |
   socket was first bound is also shown.
 
 parameters:
-   - name: ThreatCloudAPIKey
+   - name: ThreatCloudKey
      default:
 
 sources:
 - precondition: SELECT OS From info() where OS = 'windows'
   query: |
+  
+    LET Creds = if(
+        condition=ThreatCloudKey,
+        then=ThreatCloudKey,
+        else=server_metadata().ThreatCloudKey)   
+  
     LET processes <= SELECT Name, Pid AS ProcPid FROM pslist()
+    
     LET Results <= SELECT Pid, {
         SELECT Name from processes
         WHERE Pid = ProcPid
@@ -25,7 +32,7 @@ sources:
     LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
         ThreatCloudData.response.reputation.severity[0] AS Severity, 
         ThreatCloudData.response.risk[0] AS Risk
-    FROM Artifact.Server.Enrichment.ThreatCloud.IP(ThreatCloudAPIKey=ThreatCloudAPIKey,IP=`Raddr.IP`)} AS Data
+    FROM Artifact.Server.Enrichment.ThreatCloud.IP(ThreatCloudKey=ThreatCloudKey,IP=`Raddr.IP`)} AS Data
     FROM foreach(row=Results)
         
     SELECT Name, Pid, `Raddr.IP`, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity FROM Rows
