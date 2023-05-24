@@ -1,6 +1,7 @@
 name: PSList.VTLookup
 description: |
-   Combination of PSList with Virus Total reputation lookup using the Server Enrichment Artifact by Wes Lambert. | Virus Total API Key to be inserted into server metadata as VirustotalKey
+   Combination of PSList with Virus Total reputation lookup using the Server Enrichment Artifact by Wes Lambert. | 
+   Virus Total API Key to be inserted into server metadata as VirustotalKey
 
 type: CLIENT
 
