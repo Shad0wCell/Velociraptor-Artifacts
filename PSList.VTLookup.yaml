@@ -7,20 +7,23 @@ type: CLIENT
 author: Chris Jones - CPIRT
 
 parameters:
-   - name: VTKey
-     default: VTKey
+   - name: VirustotalKey
+     default:
 
 sources:
   - precondition:
       SELECT OS From info() where OS = 'windows' or 'linux'
 
-    query: |
-        LET Key <= VTKey
-
+  - query: |
+        LET Creds = if(
+           condition=VirustotalKey,
+           then=VirustotalKey,
+           else=server_metadata().VirustotalKey)
+           
         LET Results = SELECT Name,Pid,Ppid,Username,{
             Select Name FROM pslist(pid=Ppid)
         } AS ParentName,hash(path=Exe).SHA1 AS SHA1,
         CommandLine, Exe FROM pslist()
 
-        SELECT *, {SELECT VTRating FROM Artifact.Server.Enrichment.Virustotal(VirustotalKey=VTKey,Hash=SHA1)} AS VTResults
+        SELECT *, {SELECT VTRating FROM Artifact.Server.Enrichment.Virustotal(VirustotalKey=Creds,Hash=SHA1)} AS VTResults
         FROM foreach(row=Results)
