@@ -7,19 +7,13 @@ type: CLIENT
 
 author: Chris Jones - CPIRT
 
-parameters:
-   - name: ThreatCloudKey
-     default: ThreatCloudKey
-
 sources:
   - precondition:
       SELECT OS From info() where OS = 'windows' or 'linux'
 
     query: |
-        LET Creds = if(
-           condition=ThreatCloudKey,
-           then=ThreatCloudKey,
-           else=server_metadata().ThreatCloudKey)
+        LET Creds = server_metadata().ThreatCloudKey
+        
         LET PSListQuery <= SELECT Name,Pid,Ppid,Username,hash(path=Exe).SHA256 AS SHA256,
         CommandLine, Exe FROM pslist()
 
