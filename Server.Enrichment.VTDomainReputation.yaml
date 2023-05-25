@@ -1,0 +1,39 @@
+name: Server.Enrichment.VTDomainReputation
+author: CPIRT - Chris Jones
+description: |
+  Submit a domain to Virustotal for details.
+
+  This artifact can be called from within another artifact to enrich the data made available by that artifact.
+
+  Ex.
+
+    `SELECT * from Server.Enrichment.VTDomainReputation(Domain="YourDomain")`
+
+  Using Wes Lamberts framework for VT querying.
+
+type: SERVER
+
+parameters:
+    - name: Domain
+      type: string
+      description: Domain to submit to VT
+      default:
+
+    - name: VirustotalKey
+      type: string
+      description: API key for Virustotal. Leave blank here if using server metadata store.
+      default:
+
+sources:
+  - query: |
+        LET Creds = if(
+           condition=VirustotalKey,
+           then=VirustotalKey,
+           else=server_metadata().VirustotalKey)
+
+        LET URL <= 'https://www.virustotal.com/api/v3/domains/' + Domain
+
+        LET Data = SELECT parse_json(data=Content) AS VTData
+        FROM http_client(url=URL, headers=dict(`x-apikey`=Creds))
+
+        SELECT VTData.data.attributes.total_votes AS Reputation, VTData.data.links.self AS VTLink FROM Data
