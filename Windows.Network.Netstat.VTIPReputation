@@ -3,13 +3,10 @@ description: |
   Show information about open sockets. On windows the time when the
   socket was first bound is also shown.
 
-parameters:
-   - name: VTKey
-     default: VTKey
-
 sources:
 - precondition: SELECT OS From info() where OS = 'windows'
   query: |
+    LET Creds = server_metadata().VirustotalKey
     LET processes <= SELECT Name, Pid AS ProcPid FROM pslist()
     LET Results <= SELECT Pid, {
         SELECT Name from processes
@@ -22,5 +19,7 @@ sources:
       Timestamp
     FROM netstat() WHERE NOT `Raddr.IP` =~ '''(^127\.0\.0\.1)|(^192\.168)|(^10\.)|(^172\.1[6-9])|(^172\.2[0-9])|(^172\.3[0-1])|(^0\.0\.0\.0)'''
     
-    SELECT *, {SELECT * FROM Artifact.Server.Enrichment.VTIPReputation(VirustotalKey=VTKey,IP=`Raddr.IP`)} AS VTResults
+    LET Rows = SELECT *, {SELECT * FROM Artifact.Server.Enrichment.VTIPReputation(VirustotalKey=Creds,IP=`Raddr.IP`)} AS VTResults
     FROM foreach(row=Results)
+
+    SELECT Name, Pid, Status, `Raddr.IP`, `Raddr.Port`, VTResults.Reputation AS Reputation, Fqdn FROM Rows
