@@ -1,0 +1,45 @@
+name: Windows.Browser.Domains.VTLookup
+description: | 
+        Pulls browser history, shortens the full URL to just the domain and queries the domain against VT.
+        VT API Key to be stored within the server metadata as VirustotalKey 
+
+sources:
+  - name: Google Chrome
+    query: |
+        LET VirustotalKey = server_metadata().VirustotalKey
+
+        LET get_domain(URL) = parse_string_with_regex(
+           string=URL, regex='^https?://(?P<Domain>[^:/]+)').Domain
+           
+        LET ChromeResults = SELECT *, get_domain(URL=visited_url) AS Domain FROM Artifact.Windows.Applications.Chrome.History() GROUP BY Domain
+
+        LET ChromeRows = SELECT *, {SELECT * FROM Artifact.Server.Enrichment.VTDomainReputation(VirustotalKey=VirustotalKey,Domain=Domain)} AS VTResults FROM foreach(row=ChromeResults)
+        
+        SELECT User, Domain, VTResults.Reputation.malicious AS Malicious, VTResults.Reputation.harmless AS Harmless FROM ChromeRows WHERE NOT Domain =~ '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        
+  - name: Mozilla Firefox
+    query: |
+        LET VirustotalKey = server_metadata().VirustotalKey
+
+        LET get_domain(URL) = parse_string_with_regex(
+           string=URL, regex='^https?://(?P<Domain>[^:/]+)').Domain
+        
+        LET FirefoxResults = SELECT *, get_domain(URL=visited_url) AS Domain FROM Artifact.Windows.Applications.Firefox.History() GROUP BY Domain
+
+        LET FirefoxRows = SELECT *, {SELECT * FROM Artifact.Server.Enrichment.VTDomainReputation(VirustotalKey=VirustotalKey,Domain=Domain)} AS VTResults FROM foreach(row=FirefoxResults)
+
+        SELECT User, Domain, VTResults.Reputation.malicious AS Malicious, VTResults.Reputation.harmless AS Harmless FROM FirefoxRows WHERE NOT Domain =~ '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'
+        
+  - name: Microsoft Edge
+    query: |
+        LET VirustotalKey = server_metadata().VirustotalKey
+
+        LET get_domain(URL) = parse_string_with_regex(
+           string=URL, regex='^https?://(?P<Domain>[^:/]+)').Domain
+        
+        LET EdgeResults = SELECT *, get_domain(URL=visited_url) AS Domain FROM Artifact.Windows.Applications.Edge.History() GROUP BY Domain
+
+        LET EdgeRows = SELECT *, {SELECT * FROM Artifact.Server.Enrichment.VTDomainReputation(VirustotalKey=VirustotalKey,Domain=Domain)} AS VTResults FROM foreach(row=EdgeResults)
+
+        SELECT User, Domain, VTResults.Reputation.malicious AS Malicious, VTResults.Reputation.harmless AS Harmless FROM EdgeRows WHERE NOT Domain =~ '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$'     
+
