@@ -1,4 +1,4 @@
-name: CPIRT.Windows.KAPE.Compounds
+name: CPIRT.Windows.KAPE.Collection
 description: |
     You must package the KAPE tool with the "Targets" folder included into a zip file and server locally. Select the tool hyperlink below to upload the zip archive.
     
