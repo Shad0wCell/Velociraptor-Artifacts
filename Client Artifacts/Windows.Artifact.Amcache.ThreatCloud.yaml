@@ -21,7 +21,7 @@ sources:
       
     query: |
     
-        LET Creds = server_metadata().ThreatCloudKey
+        LET Creds = server_metadata().TCKey
         
         LET files = SELECT OSPath FROM glob(globs=expand(path=AMCacheGlob))
            
