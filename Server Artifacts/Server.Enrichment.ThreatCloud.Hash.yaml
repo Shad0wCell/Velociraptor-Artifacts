@@ -18,10 +18,7 @@ parameters:
 
 sources:
   - query: |
-        LET Creds = if(
-           condition=ThreatCloudKey,
-           then=ThreatCloudKey,
-           else=server_metadata().TCKey)        
+        LET Creds = server_metadata().TCKey       
         
         LET SessionKeyURL = "https://rep.checkpoint.com/rep-auth/service/v1.0/request"
         LET QueryURL = 'https://rep.checkpoint.com/file-rep/service/v2.0/query?resource=' + Hash
