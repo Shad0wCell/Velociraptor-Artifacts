@@ -11,11 +11,6 @@ parameters:
       description: The file hash to submit to Check Point ThreatCloud (MD5, SHA1, SHA256).
       default:
 
-    - name: ThreatCloudKey
-      type: string
-      description: API key for Check Point ThreatCloud.
-      default:
-
 sources:
   - query: |
         LET Creds = server_metadata().TCKey       
