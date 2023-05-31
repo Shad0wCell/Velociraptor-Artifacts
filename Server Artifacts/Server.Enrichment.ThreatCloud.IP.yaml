@@ -10,17 +10,9 @@ parameters:
       description: The IP to query Check Point ThreatCloud.
       default:
 
-    - name: ThreatCloudKey
-      type: string
-      description: API key for Check Point ThreatCloud.
-      default:
-
 sources:
   - query: |
-        LET Creds = if(
-           condition=ThreatCloudKey,
-           then=ThreatCloudKey,
-           else=server_metadata().ThreatCloudKey)          
+        LET Creds = server_metadata().TCKey         
         
         LET SessionKeyURL = "https://rep.checkpoint.com/rep-auth/service/v1.0/request"
         LET QueryURL = 'https://rep.checkpoint.com/url-rep/service/v2.0/query?resource=' + IP
