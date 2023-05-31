@@ -12,7 +12,7 @@ sources:
       SELECT OS From info() where OS = 'windows' or 'linux'
 
     query: |
-        LET Creds = server_metadata().ThreatCloudKey
+        LET Creds = server_metadata().TCKey
         
         LET PSListQuery <= SELECT Name,Pid,Ppid,Username,hash(path=Exe).SHA256 AS SHA256,
         CommandLine, Exe FROM pslist()
