@@ -1,29 +1,66 @@
-name: PSList.ThreatCloud
+name: Custom.Windows.System.Pslist.ThreatCloud
 description: |
-   Combination of PSList with Check Point ThreatCloud reputation lookup using the Server Enrichment Artifact.
-   Insert ThreatCloud API key into server metadata as ThreatCloudKey
+  List processes and their running binaries with ThreatCloud integration. Requires Artifact.Server.Enrichment.ThreatCloud.Hash server artifact, as well as a ThreatCloud API key being inserted into the server metadata as TCKey.
 
-type: CLIENT
-
-author: Chris Jones - CPIRT
+parameters:
+  - name: ProcessRegex
+    default: .
+    type: regex
+  - name: PidRegex
+    default: .
+    type: regex
+  - name: ExePathRegex
+    default: .
+    type: regex
+  - name: CommandLineRegex
+    default: .
+    type: regex
+  - name: UsernameRegex
+    default: .
+    type: regex
+  - name: UntrustedAuthenticode
+    description: Show only Executables that are not trusted by Authenticode.
+    type: bool
+  - name: UseTracker
+    type: bool
+    description: If set we use the process tracker.
 
 sources:
-  - precondition:
-      SELECT OS From info() where OS = 'windows' or 'linux'
-
+  - precondition: SELECT OS From info() where OS = 'windows'
+    
     query: |
-        LET Creds = server_metadata().TCKey
-        
-        LET PSListQuery <= SELECT Name,Pid,Ppid,Username,hash(path=Exe).SHA256 AS SHA256,
-        CommandLine, Exe FROM pslist()
+    
+        LET ProcList = SELECT * FROM if(condition=UseTracker,
+        then={
+          SELECT Pid, Ppid, NULL AS TokenIsElevated,
+                 Username, Name, CommandLine, Exe, NULL AS Memory
+          FROM process_tracker_pslist()
+        }, else={
+          SELECT * FROM pslist()
+        })
 
+        LET Query = SELECT Pid, Ppid, TokenIsElevated, Name, CommandLine, Exe,
+            token(pid=Pid) as TokenInfo,
+            hash(path=Exe) as Hash,
+            authenticode(filename=Exe) AS Authenticode,
+            Username, Memory.WorkingSetSize AS WorkingSetSize
+        FROM ProcList
+        WHERE Name =~ ProcessRegex
+            AND Pid =~ PidRegex
+            AND Exe =~ ExePathRegex
+            AND CommandLine =~ CommandLineRegex
+            AND Username =~ UsernameRegex
+            AND NOT if(condition= UntrustedAuthenticode,
+                        then= Authenticode.Trusted = 'trusted' OR NOT Exe,
+                        else= False )
+        
         LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
         ThreatCloudData.response.reputation.severity[0] AS Severity, 
         ThreatCloudData.response.risk[0] AS Risk, 
         ThreatCloudData.response.findings.total[0] AS Total,
         ThreatCloudData.response.findings.positives[0] AS VTPositives
-        FROM Artifact.Server.Enrichment.ThreatCloud.Hash(ThreatCloudKey=Creds,Hash=SHA256)} AS Data
-        FROM foreach(row=PSListQuery)
+        FROM Artifact.Server.Enrichment.ThreatCloud.Hash(Hash=Hash.SHA256)} AS Data
+        FROM foreach(row=Query)
         
         SELECT Name, Pid, Username, CommandLine, Exe, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
         FROM Rows
