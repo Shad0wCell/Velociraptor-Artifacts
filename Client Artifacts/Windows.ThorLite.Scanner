@@ -1,0 +1,53 @@
+name: Windows.ThorLite.Scanner
+description: |
+        Use of Thor-Lite to scan a client endpoint
+        
+        Upload your Thor-Lite package to the server (Can include custom yara. Place within the "Custom-Signatures" folder). Updating of Thor-Lite carried out within the artifact.
+
+author: Chris Jones - CPIRT
+
+tools:
+ - name: thor
+   
+precondition: SELECT OS From info() where OS = 'windows'
+
+sources:
+ - name: Upload
+   query: |
+   
+        LET Hostname <= SELECT Hostname as Host FROM info()
+        
+        -- Fetch the binary
+        LET Toolzip <= SELECT FullPath
+        FROM Artifact.Generic.Utils.FetchBinary(ToolName="thor", IsExecutable=FALSE)
+
+        LET TmpDir <= tempdir()
+
+        -- Unzip the binary
+        LET _ <= SELECT * FROM unzip(filename=Toolzip.FullPath, output_directory=TmpDir)
+
+        -- Set EXE
+        LET ThorExe <= TmpDir + '\\thor64-lite.exe'
+        
+        --Set Update
+        Let ThorUpdate <= TmpDir + '\\thor-lite-util.exe'
+
+        -- Build the update command
+        LET UpdateCmd <= filter(list=(ThorUpdate, "update")
+        ,  regex=".+")
+
+        -- Build the exec command
+        LET ThorCmd <= filter(list=(ThorExe, "--quick", "--json", "--jsonfile", TmpDir + "\\" + Hostname.Host[0] + "-thor-log-file.json" )
+        ,  regex=".+")
+        
+        -- Run the tool.
+        LET ExecThor <= SELECT *
+        FROM execve(argv=ThorCmd,sep="\n", length=10000)
+        
+        -- Upload JSON to the hunt
+        LET Upload <= SELECT Name, upload(file=FullPath,name=relpath(base=TmpDir + Hostname.Host[0] + "-thor-log-file.json", path=FullPath)) as FileDetails
+        FROM glob(globs="/**", root=TmpDir)
+        WHERE Name =~ "(json)$"
+        
+        -- Parse JSON to Notebook
+        SELECT * FROM parse_jsonl(filename= TmpDir + "\\" + Hostname.Host[0] + "-thor-log-file.json")
