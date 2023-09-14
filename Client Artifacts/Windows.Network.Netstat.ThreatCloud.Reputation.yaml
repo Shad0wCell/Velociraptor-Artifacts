@@ -28,7 +28,7 @@ sources:
     LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
         ThreatCloudData.response.reputation.severity[0] AS Severity, 
         ThreatCloudData.response.risk[0] AS Risk
-    FROM Artifact.Server.Enrichment.ThreatCloud.IP(ThreatCloudKey=ThreatCloudKey,IP=`Raddr.IP`)} AS Data
+    FROM Artifact.Server.Enrichment.ThreatCloud.IP(IP=`Raddr.IP`)} AS Data
     FROM foreach(row=Results)
         
     SELECT Name, Pid, `Raddr.IP`, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity FROM Rows
