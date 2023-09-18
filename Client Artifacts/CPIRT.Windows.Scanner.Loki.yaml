@@ -1,0 +1,53 @@
+name: Custom.Windows.Scanner.Loki
+
+tools:
+  - name: Loki
+    
+parameters:
+  - name: IntenseScan
+    type: bool
+    
+  - name: ProcessOnly
+    type: bool
+  
+  - name: NoProcScan
+    type: bool
+  
+  - name: UploadCSVLog
+    type: bool
+
+sources:
+  - query: |
+        -- preparation
+        LET Hostname <= SELECT Hostname as Host FROM info()
+        LET Toolzip <= SELECT FullPath FROM Artifact.Generic.Utils.FetchBinary(ToolName="Loki", IsExecutable=FALSE)
+        LET TmpDir <= tempdir(remove_last=TRUE)
+        LET UnzipIt <= SELECT * FROM unzip(filename=Toolzip.FullPath, output_directory=TmpDir)
+        
+        -- execute Loki
+        LET ExecLoki <= SELECT * FROM execve(argv=filter(list=[
+                        TmpDir + "/loki/loki.exe",
+                        "-l", TmpDir + "\\loki\\" + Hostname.Host[0]  + "-loki-log-file.csv", 
+                        "--csv",
+                        "--dontwait",
+                        if(condition=IntenseScan, then="--intense", else=""),
+                        if(condition=ProcessOnly, then="--nofilescan", else="")
+                        if(condition=NoProcScan, then="--noprocscan", else="")], regex="."))
+        -- parse csvs
+        SELECT * FROM foreach(row=ExecLoki,
+            query={
+                SELECT *, Hostname
+                FROM split_records(filenames=TmpDir + "\\loki\\" + Hostname.Host[0]  + "-loki-log-file.csv", accessor="auto", regex="," , columns=['Time', 'Hostname', 'DetectionType', 'ScanType', 'Detection'], count=5)
+        })
+        
+  - name: Uploads
+    query: |
+        -- upload CSV logs if requested
+        SELECT * FROM if(
+           condition=UploadCSVLog,
+           then={
+             SELECT Name, upload(file=FullPath,
+                                 name=relpath(base=TmpDir + Hostname.Host[0] + "-loki-log-file.csv", path=FullPath)) as FileDetails
+             FROM glob(globs="/**", root=TmpDir)
+             WHERE Name =~ "(csv)$"
+        })
