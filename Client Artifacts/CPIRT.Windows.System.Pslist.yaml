@@ -74,4 +74,4 @@ sources:
             FROM foreach(row=Results)
         
             SELECT Name, Pid, Username, CommandLine, Exe, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
-            FROM Rows
+            FROM Rows WHERE VTPositives >= 1
