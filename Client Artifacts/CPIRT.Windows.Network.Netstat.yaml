@@ -26,12 +26,14 @@ sources:
           # ThreatCloud IP Lookup.
           */
 
-            LET Results <= SELECT * FROM source() WHERE NOT `Raddr.IP` =~ '''(^127\.0\.0\.1)|(^192\.168)|(^10\.)|(^172\.1[6-9])|(^172\.2[0-9])|(^172\.3[0-1])|(^0\.0\.0\.0)|(^:\:)|(^$)|(\s+$)'''
+            LET Results <= SELECT * FROM source() WHERE NOT `Raddr.IP` =~ '''(192\.168\.*|0.0.0.0|127.0.0.*|::|:|NULL)''' AND NOT `Raddr.IP` = ""
     
             LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
                 ThreatCloudData.response.reputation.severity[0] AS Severity, 
-                ThreatCloudData.response.risk[0] AS Risk
+                ThreatCloudData.response.risk[0] AS Risk,
+                ThreatCloudData.response.context.vt_positives[0] AS VTPositives, 
+                ThreatCloudData.response.context.indications[0][0] AS Context
             FROM Artifact.Server.Enrichment.ThreatCloud.IP(IP=`Raddr.IP`)} AS Data
             FROM foreach(row=Results)
         
-            SELECT Name, Pid, `Raddr.IP`, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity FROM Rows
+            SELECT Name, Pid, `Raddr.IP`, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity, Data.VTPositives AS `VT Positives`, Data.Context AS `Context` FROM Rows
