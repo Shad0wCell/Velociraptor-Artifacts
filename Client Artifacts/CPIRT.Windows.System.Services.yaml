@@ -145,4 +145,4 @@ sources:
             FROM foreach(row=Query)
             
             SELECT State,Name,DisplayName,Status,Pid,ExitCode,StartMode,PathName,ServiceType,UserAccount,Created,ServiceDll,FailureCommand,FailureActions,AbsoluteExePath,HashServiceExe.SHA256,HashServiceDll.SHA256,Fqdn, Count, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
-            FROM Rows
+            FROM Rows VTPositives >= 1
