@@ -1,0 +1,92 @@
+name: CPIRT.Windows.System.DLLs
+description: |
+  Enumerate the DLLs loaded by a running process. It includes hash value
+  and certificate information.
+
+parameters:
+  - name: ProcessRegex
+    description: A regex applied to process names.
+    default: .
+    type: regex
+  - name: PidRegex
+    default: .
+    type: regex
+  - name: ExePathRegex
+    default: .
+    type: regex
+  - name: CommandLineRegex
+    default: .
+    type: regex
+  - name: DllRegex
+    description: A regex applied to the full dll path (e.g. whitelist all system dlls)
+    default: .
+    type: regex
+  - name: Calculate_Hash
+    default: Y
+    type: bool
+  - name: CertificateInfo
+    default: N
+    type: bool
+
+sources:
+  - query: |
+  
+      -- first find processes in scope
+      LET processes = SELECT Pid, Name,Exe,CommandLine
+        FROM pslist()
+        WHERE Name =~ ProcessRegex
+            AND Pid =~ PidRegex
+            AND Exe =~ ExePathRegex
+            AND CommandLine =~ CommandLineRegex
+
+      -- find modules
+      LET results = SELECT * FROM foreach(
+          row=processes,
+          query={
+            SELECT Pid, Name,Exe as _Exe,CommandLine as _CommandLine ,
+                format(format='%x-%x', args=[ModuleBaseAddress,
+                     ModuleBaseAddress+ModuleBaseSize]) AS Range,
+                ModuleName, ExePath as ModulePath
+            FROM modules(pid=Pid)
+            WHERE ModulePath =~ DllRegex
+          })
+      
+      -- add additional enrichment usecases
+      LET cert_hash = SELECT *,
+                hash(path=expand(path=ModulePath)) AS Hash,
+                authenticode(filename=ModulePath) AS Certinfo
+            FROM results
+      LET cert_nohash = SELECT *, authenticode(filename=ModulePath) AS Certinfo
+            FROM results
+      LET nocert_hash = SELECT *, hash(path=expand(path=ModulePath)) AS Hash
+            FROM results
+      
+      -- output rows
+      SELECT * FROM if(condition= Calculate_Hash AND CertificateInfo,
+                        then= cert_hash,
+                        else= if(condition= Calculate_Hash,
+                                    then= nocert_hash,
+                                    else= if(condition= CertificateInfo,
+                                        then= cert_nohash,
+                                        else= results )))
+    notebook:
+      - type: vql_suggestion
+        name: Hash Lookup
+        template: |
+          /*
+          # ThreatCloud Hash Lookup.
+          */
+          
+            LET Results = SELECT * FROM source()
+            GROUP BY Hash.SHA256
+
+            LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
+            ThreatCloudData.response.reputation.severity[0] AS Severity, 
+            ThreatCloudData.response.risk[0] AS Risk, 
+            ThreatCloudData.response.findings.total[0] AS Total,
+            ThreatCloudData.response.findings.positives[0] AS VTPositives
+            FROM Artifact.Server.Enrichment.ThreatCloud.Hash(Hash=Hash.SHA256)} AS Data
+            FROM foreach(row=Results)
+            
+            SELECT Pid, Name, Range, ModuleName, ModulePath, Hash.SHA256, FlowId, ClientId, Fqdn, Data.Classification as Classifications, Data.Severity AS Severity, Data.Risk AS Risk, Data.Total AS Total, Data.VTPositives AS VTPositives
+            FROM Rows WHERE VTPositives >= 1
