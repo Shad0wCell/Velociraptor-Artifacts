@@ -124,13 +124,15 @@ sources:
           # ThreatCloud Hash Lookup.
           */
 
-            LET Results <= SELECT * FROM source()
-    
-            LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
-                ThreatCloudData.response.reputation.severity[0] AS Severity, 
-                ThreatCloudData.response.risk[0] AS Risk
-            FROM Artifact.Server.Enrichment.ThreatCloud.Hash(Hash=SHA1)} AS Data
-            FROM foreach(row=Results)
-        
-            SELECT HivePath, EntryKey, KeyMTime, EntryType, SHA1, EntryName, EntryPath, Publisher, OriginalFileName, BinaryType, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity 
-            FROM Rows
+              LET Results <= SELECT * FROM source()
+
+              LET Rows = SELECT *, {SELECT ThreatCloudData.response.reputation.classification[0] AS Classification, 
+              ThreatCloudData.response.reputation.severity[0] AS Severity, 
+              ThreatCloudData.response.risk[0] AS Risk,
+              ThreatCloudData.response.findings.total[0] AS Total,
+              ThreatCloudData.response.findings.positives[0] AS VTPositives
+              FROM Artifact.Server.Enrichment.ThreatCloud.Hash(Hash=SHA1)} AS Data
+              FROM foreach(row=Results)
+
+              SELECT HivePath, EntryKey, KeyMTime, EntryType, SHA1, EntryName, EntryPath, Publisher, OriginalFileName, BinaryType, Data.Risk AS Risk, Data.Classification as Classifications, Data.Severity AS Severity, Data.VTPositives AS `Virus Total`
+              FROM Rows WHERE Data.VTPositives >= 1
